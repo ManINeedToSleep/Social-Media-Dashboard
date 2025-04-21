@@ -1,19 +1,19 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/components/AuthContext";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated") {
+    if (!isLoading && isAuthenticated) {
       router.push("/dashboard");
     }
-  }, [status, router]);
+  }, [isLoading, isAuthenticated, router]);
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient-to-b from-indigo-50 to-white">
@@ -24,7 +24,7 @@ export default function Home() {
               Social Media Dashboard
             </h1>
             <div>
-              {status === "authenticated" ? (
+              {isAuthenticated ? (
                 <Link
                   href="/dashboard"
                   className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
@@ -33,7 +33,7 @@ export default function Home() {
                 </Link>
               ) : (
                 <Link
-                  href="/auth/signin"
+                  href="/auth/custom-signin"
                   className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700"
                 >
                   Sign In
@@ -56,7 +56,7 @@ export default function Home() {
           </p>
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Link
-              href="/auth/signin"
+              href="/auth/custom-signin"
               className="rounded-md bg-indigo-600 px-8 py-3 text-base font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
             >
               Get Started

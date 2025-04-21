@@ -1,11 +1,11 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { useAuth } from "@/components/AuthContext";
 import Link from "next/link";
 import { useState } from "react";
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
@@ -49,7 +49,7 @@ export default function Navbar() {
                 >
                   <span className="sr-only">Open user menu</span>
                   <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
-                    {session?.user?.name?.charAt(0) || "U"}
+                    {user?.name?.charAt(0) || "U"}
                   </div>
                 </button>
               </div>
@@ -66,7 +66,7 @@ export default function Navbar() {
                     className="block w-full px-4 py-2 text-left text-sm text-gray-700"
                     onClick={() => {
                       setIsMenuOpen(false);
-                      signOut({ callbackUrl: "/" });
+                      logout();
                     }}
                   >
                     Sign out
@@ -131,15 +131,15 @@ export default function Navbar() {
             <div className="flex items-center px-4">
               <div className="flex-shrink-0">
                 <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center">
-                  {session?.user?.name?.charAt(0) || "U"}
+                  {user?.name?.charAt(0) || "U"}
                 </div>
               </div>
               <div className="ml-3">
                 <div className="text-base font-medium text-gray-800">
-                  {session?.user?.name || "User"}
+                  {user?.name || "User"}
                 </div>
                 <div className="text-sm font-medium text-gray-500">
-                  {session?.user?.email || ""}
+                  {user?.email || ""}
                 </div>
               </div>
             </div>
@@ -155,7 +155,7 @@ export default function Navbar() {
                 className="block w-full px-4 py-2 text-left text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
                 onClick={() => {
                   setIsMenuOpen(false);
-                  signOut({ callbackUrl: "/" });
+                  logout();
                 }}
               >
                 Sign out

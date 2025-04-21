@@ -1,7 +1,8 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useAuth } from "@/components/AuthContext";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import { ReactNode } from "react";
 
@@ -10,18 +11,22 @@ export default function DashboardLayout({
 }: {
   children: ReactNode;
 }) {
-  const { data: session, status } = useSession();
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
 
-  if (status === "loading") {
+  useEffect(() => {
+    // Only redirect if not loading and not authenticated
+    if (!isLoading && !isAuthenticated) {
+      router.push("/auth/custom-signin");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
       </div>
     );
-  }
-
-  if (status === "unauthenticated") {
-    redirect("/auth/signin");
   }
 
   return (

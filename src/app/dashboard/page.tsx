@@ -1,19 +1,19 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useAuth } from "@/components/AuthContext";
 import FollowersChart from "@/components/metrics/FollowersChart";
 import EngagementMetrics from "@/components/metrics/EngagementMetrics";
 import AIRecommendations from "@/components/recommendations/AIRecommendations";
 import PlatformConnect from "@/components/PlatformConnect";
 
 export default function Dashboard() {
-  const { data: session } = useSession();
+  const { user } = useAuth();
 
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          Welcome, {session?.user?.name || "User"}
+          Welcome, {user?.name || "User"}
         </h1>
         <p className="text-gray-600">
           Here's an overview of your social media performance
