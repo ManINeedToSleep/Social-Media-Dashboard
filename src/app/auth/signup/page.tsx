@@ -9,39 +9,33 @@ import { motion } from 'framer-motion';
 import { signIn } from "next-auth/react";
 
 /**
- * Custom sign-in page component
- * Features a sleek design with animations and social login options
+ * Custom sign-up page component
+ * Features a sleek design with animations and social signup options
  * Supports both light and dark modes
+ * Includes first/last name fields and form validation
  * Integrated with NextAuth.js for authentication
  */
 
-const signInSchema = z.object({
+const signUpSchema = z.object({
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  remember: z.boolean().optional(),
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords don't match",
+  path: ["confirmPassword"],
 });
 
-type SignInForm = z.infer<typeof signInSchema>;
+type SignUpForm = z.infer<typeof signUpSchema>;
 
-export default function CustomSignIn() {
+export default function SignUp() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
-
-  // Check for error message in URL
-  useEffect(() => {
-    const errorParam = searchParams.get("error");
-    if (errorParam) {
-      if (errorParam === "CredentialsSignin") {
-        setError("Invalid email or password. Please try again.");
-      } else {
-        setError("Something went wrong. Please try again.");
-      }
-    }
-  }, [searchParams]);
 
   // Animation controls
   useEffect(() => {
@@ -52,23 +46,43 @@ export default function CustomSignIn() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignInForm>();
+  } = useForm<SignUpForm>();
 
-  const onSubmit = async (data: SignInForm) => {
+  const onSubmit = async (data: SignUpForm) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const result = await signIn("credentials", {
+      // Register the user via API
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: `${data.firstName} ${data.lastName}`,
+          email: data.email,
+          password: data.password,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Failed to register");
+      }
+
+      // Sign in the user after successful registration
+      const signInResult = await signIn("credentials", {
         redirect: false,
         email: data.email,
         password: data.password,
         callbackUrl,
       });
 
-      if (result?.error) {
-        setError("Invalid email or password");
-        setIsLoading(false);
+      if (signInResult?.error) {
+        setError("Registration successful, but failed to sign in. Please try logging in.");
+        router.push("/auth/custom-signin");
         return;
       }
 
@@ -76,19 +90,20 @@ export default function CustomSignIn() {
       setTimeout(() => {
         router.push(callbackUrl);
       }, 500);
-    } catch (error) {
-      setError("Something went wrong. Please try again.");
+    } catch (error: any) {
+      setError(error.message || "Something went wrong. Please try again.");
+    } finally {
       setIsLoading(false);
     }
   };
 
-  // Social login handlers
-  const handleGoogleLogin = async () => {
+  // Social signup handlers
+  const handleGoogleSignup = async () => {
     setIsLoading(true);
     await signIn("google", { callbackUrl });
   };
 
-  const handleGitHubLogin = async () => {
+  const handleGitHubSignup = async () => {
     setIsLoading(true);
     await signIn("github", { callbackUrl });
   };
@@ -114,7 +129,7 @@ export default function CustomSignIn() {
           </Link>
         </motion.div>
         
-        {/* Login card */}
+        {/* Signup card */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -129,7 +144,7 @@ export default function CustomSignIn() {
                 transition={{ delay: 0.2, duration: 0.5 }}
                 className="text-2xl font-bold text-gray-900 dark:text-white"
               >
-                Welcome to Omnilytics
+                Join Omnilytics
               </motion.h1>
               <motion.h2 
                 initial={{ opacity: 0, y: 10 }}
@@ -137,11 +152,11 @@ export default function CustomSignIn() {
                 transition={{ delay: 0.3, duration: 0.5 }}
                 className="mt-2 text-lg text-gray-600 dark:text-gray-300"
               >
-                Sign in to your account
+                Create your account
               </motion.h2>
             </div>
 
-            {/* Social login buttons */}
+            {/* Social signup buttons */}
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -150,7 +165,7 @@ export default function CustomSignIn() {
             >
               <button
                 type="button"
-                onClick={handleGitHubLogin}
+                onClick={handleGitHubSignup}
                 disabled={isLoading}
                 className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 disabled:opacity-70"
               >
@@ -161,7 +176,7 @@ export default function CustomSignIn() {
               </button>
               <button
                 type="button"
-                onClick={handleGoogleLogin}
+                onClick={handleGoogleSignup}
                 disabled={isLoading}
                 className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 disabled:opacity-70"
               >
@@ -206,7 +221,7 @@ export default function CustomSignIn() {
               </motion.div>
             )}
 
-            {/* Login form */}
+            {/* Signup form */}
             <motion.form 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -215,6 +230,40 @@ export default function CustomSignIn() {
               className="mt-6 space-y-6"
             >
               <div className="space-y-4">
+                {/* Name fields */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      First name
+                    </label>
+                    <input
+                      id="firstName"
+                      type="text"
+                      autoComplete="given-name"
+                      {...register("firstName")}
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 sm:text-sm"
+                    />
+                    {errors.firstName && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.firstName.message}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                      Last name
+                    </label>
+                    <input
+                      id="lastName"
+                      type="text"
+                      autoComplete="family-name"
+                      {...register("lastName")}
+                      className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 sm:text-sm"
+                    />
+                    {errors.lastName && (
+                      <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.lastName.message}</p>
+                    )}
+                  </div>
+                </div>
+
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                     Email address
@@ -238,7 +287,7 @@ export default function CustomSignIn() {
                   <input
                     id="password"
                     type="password"
-                    autoComplete="current-password"
+                    autoComplete="new-password"
                     {...register("password")}
                     className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 sm:text-sm"
                   />
@@ -247,24 +296,20 @@ export default function CustomSignIn() {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <input
-                      id="remember"
-                      type="checkbox"
-                      {...register("remember")}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-blue-400"
-                    />
-                    <label htmlFor="remember" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-                      Remember me
-                    </label>
-                  </div>
-
-                  <div className="text-sm">
-                    <a href="#" className="font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-                      Forgot password?
-                    </a>
-                  </div>
+                <div>
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Confirm password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    autoComplete="new-password"
+                    {...register("confirmPassword")}
+                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder:text-gray-400 dark:focus:border-blue-400 dark:focus:ring-blue-400 sm:text-sm"
+                  />
+                  {errors.confirmPassword && (
+                    <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.confirmPassword.message}</p>
+                  )}
                 </div>
               </div>
 
@@ -280,21 +325,21 @@ export default function CustomSignIn() {
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
                   ) : (
-                    "Sign in"
+                    "Sign up"
                   )}
                 </button>
               </div>
             </motion.form>
 
-            {/* Sign up link */}
+            {/* Login link */}
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.5 }}
               className="mt-6 text-center"
             >
-              <Link href="/auth/signup" className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
-                Do you mean Sign Up?
+              <Link href="/auth/custom-signin" className="text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300">
+                Do you mean Login?
               </Link>
             </motion.div>
           </div>

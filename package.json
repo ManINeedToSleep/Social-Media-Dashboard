@@ -21,7 +21,7 @@
     "next-auth": "^4.24.11",
     "openai": "^4.95.1",
     "postcss": "^8.5.3",
-    "react": "^19.0.0",
+    "react": "^19.1.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.56.0",
     "recharts": "^2.15.3",
